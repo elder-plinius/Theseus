@@ -23,7 +23,6 @@ Developers and contributors should be especially careful when making modificatio
 consistency and correctness in the system's behavior.
 """
 import json
-import openai
 from typing import Optional
 
 from fastapi import APIRouter, Query, Request, Response, UploadFile
