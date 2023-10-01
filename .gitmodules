@@ -10,3 +10,6 @@
 [submodule "EvoSwarm"]
 	path = EvoSwarm
 	url = https://github.com/ZackBradshaw/EvoSwarm
+[submodule "Asimov"]
+	path = Asimov
+	url = git@github.com:murnanedaniel/Asimov.git
