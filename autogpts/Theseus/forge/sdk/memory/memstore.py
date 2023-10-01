@@ -113,7 +113,7 @@ class MemStore(abc.ABC):
         self.delete(collection_name=task_id, doc_id=doc_id)
 
     @abc.abstractmethod
-    def add(self, collection_name: str, document: str, metadatas: dict) -> None:
+    def add_task_memory(self, collection_name: str, document: str, metadatas: dict) -> None:
         """
         Add a document to the current collection's MemStore.
 
@@ -125,7 +125,7 @@ class MemStore(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def query(
+    def query_task_memory(
         self,
         collection_name: str,
         query: str,
@@ -135,26 +135,18 @@ class MemStore(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get(
+    def get_task_memory(
         self, collection_name: str, doc_ids: list = None, filters: dict = None
     ) -> dict:
         pass
 
     @abc.abstractmethod
-    def update(
+    def update_task_memory(
         self, collection_name: str, doc_ids: list, documents: list, metadatas: list
     ):
         pass
 
-    @abc.abstractmethod
-    def delete(self, collection_name: str, doc_id: str):
-        pass
-
-
 class ChromaMemStore(MemStore):
-    """
-    A class used to represent a Memory Store
-    """
 
     def __init__(self, store_path: str):
         """
@@ -163,60 +155,32 @@ class ChromaMemStore(MemStore):
         Args:
             store_path (str): The path to the store.
         """
-        self.client = chromadb.PersistentClient(
-            path=store_path, settings=Settings(anonymized_telemetry=False)
-        )
+        pass
 
-    def add(self, task_id: str, document: str, metadatas: dict) -> None:
+    def add_task_memory(self, task_id: str, document: str, metadatas: dict) -> None:
         """
-        Add a document to the MemStore.
+        Add a document to the current tasks MemStore.
 
         Args:
             task_id (str): The ID of the task.
             document (str): The document to be added.
             metadatas (dict): The metadata of the document.
         """
-        doc_id = hashlib.sha256(document.encode()).hexdigest()[:20]
-        collection = self.client.get_or_create_collection(task_id)
-        collection.add(documents=[document], metadatas=[metadatas], ids=[doc_id])
+        self.add(collection_name=task_id, document=document, metadatas=metadatas)
 
-    def query(
-        self,
-        task_id: str,
-        query: str,
-        filters: dict = None,
-        document_search: dict = None,
-    ) -> dict:
+    def delete_task_memory(self, task_id: str, doc_id: str):
         """
-        Query the MemStore.
+        Delete a document from the current tasks MemStore.
 
         Args:
             task_id (str): The ID of the task.
-            query (str): The query string.
-            filters (dict, optional): The filters to be applied. Defaults to None.
-            search_string (str, optional): The search string. Defaults to None.
-
-        Returns:
-            dict: The query results.
+            doc_id (str): The ID of the document to be deleted.
         """
-        collection = self.client.get_or_create_collection(task_id)
+        self.delete(collection_name=task_id, doc_id=doc_id)
 
-        kwargs = {
-            "query_texts": [query],
-            "n_results": 10,
-        }
-
-        if filters:
-            kwargs["where"] = filters
-
-        if document_search:
-            kwargs["where_document"] = document_search
-
-        return collection.query(**kwargs)
-
-    def get(self, task_id: str, doc_ids: list = None, filters: dict = None) -> dict:
+    def get_task_memory(self, task_id: str, doc_ids: list = None, filters: dict = None) -> dict:
         """
-        Get documents from the MemStore.
+        Get documents from the current tasks MemStore.
 
         Args:
             task_id (str): The ID of the task.
@@ -226,17 +190,39 @@ class ChromaMemStore(MemStore):
         Returns:
             dict: The retrieved documents.
         """
-        collection = self.client.get_or_create_collection(task_id)
-        kwargs = {}
-        if doc_ids:
-            kwargs["ids"] = doc_ids
-        if filters:
-            kwargs["where"] = filters
-        return collection.get(**kwargs)
+        return self.get(collection_name=task_id, doc_ids=doc_ids, filters=filters)
 
-    def update(self, task_id: str, doc_ids: list, documents: list, metadatas: list):
+    def query_task_memory(
+        self,
+        task_id: str,
+        query: str,
+        filters: dict = None,
+        document_search: dict = None,
+    ) -> dict:
         """
-        Update documents in the MemStore.
+        Query the current tasks MemStore.
+
+        Args:
+            task_id (str): The ID of the task.
+            query (str): The query string.
+            filters (dict, optional): The filters to be applied. Defaults to None.
+            document_search (dict, optional): The search string. Defaults to None.
+
+        Returns:
+            dict: The query results.
+        """
+        return self.query(
+            collection_name=task_id,
+            query=query,
+            filters=filters,
+            document_search=document_search,
+        )
+
+    def update_task_memory(
+        self, task_id: str, doc_ids: list, documents: list, metadatas: list
+    ):
+        """
+        Update documents in the current tasks MemStore.
 
         Args:
             task_id (str): The ID of the task.
@@ -244,20 +230,12 @@ class ChromaMemStore(MemStore):
             documents (list): The updated documents.
             metadatas (list): The updated metadata.
         """
-        collection = self.client.get_or_create_collection(task_id)
-        collection.update(ids=doc_ids, documents=documents, metadatas=metadatas)
-
-    def delete(self, task_id: str, doc_id: str):
-        """
-        Delete a document from the MemStore.
-
-        Args:
-            task_id (str): The ID of the task.
-            doc_id (str): The ID of the document to be deleted.
-        """
-        collection = self.client.get_or_create_collection(task_id)
-        collection.delete(ids=[doc_id])
-
+        self.update(
+            collection_name=task_id,
+            doc_ids=doc_ids,
+            documents=documents,
+            metadatas=metadatas,
+        )
 
 if __name__ == "__main__":
     print("#############################################")
